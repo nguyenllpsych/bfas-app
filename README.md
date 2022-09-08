@@ -1,2 +1,1 @@
-# bfas-app
-Shiny web app for the Big Five Aspect Scale
+# Big Five Aspect Scale Shiny Web Application
