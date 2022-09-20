@@ -1,0 +1,494 @@
+---
+title: "Your BFAS Report"
+date: "`r Sys.Date()`"
+output: pdf_document
+params:
+  d: NA
+  Aspects: NA
+  norms: NA
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+# Install packages not yet installed
+packages <- c("prettyGraphs","ggplot2","ggthemes","diagram","graphics","ggpubr",
+              "ggridges","stringr","dplyr","tidyr")
+installed_packages <- packages %in% rownames(installed.packages())
+if (any(installed_packages == FALSE)) {
+  install.packages(packages[!installed_packages])
+}
+invisible(lapply(packages, library, character.only = TRUE))
+
+```
+
+```{r include = FALSE}
+d       <- params$d
+Aspects <- params$Aspects
+norms   <- params$norms
+
+### Scoring ###
+
+cols = c('Q_1','Q_21','Q_41','Q_71',
+         'Q_16','Q_36','Q_56','Q_76',
+         'Q_2','Q_32','Q_52','Q_62','Q_82',
+         'Q_17','Q_37','Q_67','Q_77','Q_87','Q_97',
+         'Q_13','Q_23','Q_33','Q_53','Q_83','Q_93',
+         'Q_8','Q_48','Q_68','Q_78',
+         'Q_14','Q_24','Q_34','Q_54','Q_64',
+         'Q_29','Q_49','Q_79','Q_99',
+         'Q_15','Q_45','Q_55','Q_85',
+         'Q_50','Q_60','Q_80','Q_90')
+
+d[cols] = 6 - d[cols]
+
+# Neuroticism
+NEUR <- d[,c('Q_1', 'Q_11', 'Q_21', 'Q_31', 'Q_41', 'Q_51', 'Q_61', 'Q_71', 'Q_81', 'Q_91',
+             'Q_6', 'Q_16', 'Q_26', 'Q_36', 'Q_46', 'Q_56', 'Q_66', 'Q_76', 'Q_86', 'Q_96')]
+d$Withdrawal <- sum(d[,c('Q_1', 'Q_11', 'Q_21', 'Q_31', 'Q_41', 'Q_51', 'Q_61', 'Q_71', 'Q_81', 'Q_91')])/10
+d$Volatility <- sum(d[,c('Q_6', 'Q_16', 'Q_26', 'Q_36', 'Q_46', 'Q_56', 'Q_66', 'Q_76', 'Q_86', 'Q_96')])/10
+d$bfas_n <- (d$Withdrawal + d$Volatility)/2
+
+# Agreeableness
+AGRE <- d[,c('Q_2','Q_12', 'Q_22', 'Q_32', 'Q_42', 'Q_52', 'Q_62', 'Q_72', 'Q_82', 'Q_92',
+             'Q_7', 'Q_17', 'Q_27', 'Q_37', 'Q_47', 'Q_57', 'Q_67', 'Q_77', 'Q_87', 'Q_97')]
+d$Compassion <- sum(d[,c('Q_2','Q_12', 'Q_22', 'Q_32', 'Q_42', 'Q_52', 'Q_62', 'Q_72', 'Q_82', 'Q_92')])/10
+d$Politeness <- sum(d[,c('Q_7', 'Q_17', 'Q_27', 'Q_37', 'Q_47', 'Q_57', 'Q_67', 'Q_77', 'Q_87', 'Q_97')])/10
+d$bfas_a <- (d$Compassion + d$Politeness)/2
+
+# Conscientiousness
+CONS <- d[,c('Q_3', 'Q_13', 'Q_23', 'Q_33', 'Q_43', 'Q_53', 'Q_63', 'Q_73', 'Q_83', 'Q_93',
+             'Q_8', 'Q_18', 'Q_28', 'Q_38', 'Q_48', 'Q_58', 'Q_68', 'Q_78', 'Q_88', 'Q_98')]
+d$Industriousness <- sum(d[,c('Q_3', 'Q_13', 'Q_23', 'Q_33', 'Q_43', 'Q_53', 'Q_63', 'Q_73', 'Q_83', 'Q_93')])/10
+d$Orderliness <- sum(d[,c('Q_8', 'Q_18', 'Q_28', 'Q_38', 'Q_48', 'Q_58', 'Q_68', 'Q_78', 'Q_88', 'Q_98')])/10
+d$bfas_c <- (d$Industriousness + d$Orderliness)/2
+
+# Extraversion
+EXTR <- d[,c('Q_4', 'Q_14', 'Q_24', 'Q_34', 'Q_44', 'Q_54', 'Q_64', 'Q_74', 'Q_84', 'Q_94',
+             'Q_9', 'Q_19', 'Q_29', 'Q_39', 'Q_49', 'Q_59', 'Q_69', 'Q_79', 'Q_89', 'Q_99')]
+d$Enthusiasm <- sum(d[,c('Q_4', 'Q_14', 'Q_24', 'Q_34', 'Q_44', 'Q_54', 'Q_64', 'Q_74', 'Q_84', 'Q_94')])/10
+d$Assertiveness <- sum(d[,c('Q_9', 'Q_19', 'Q_29', 'Q_39', 'Q_49', 'Q_59', 'Q_69', 'Q_79', 'Q_89', 'Q_99')])/10
+d$bfas_e <- (d$Enthusiasm + d$Assertiveness)/2
+
+# Openness/Intellect
+OPEN <- d[,c('Q_5', 'Q_15', 'Q_25', 'Q_35', 'Q_45', 'Q_55', 'Q_65', 'Q_75', 'Q_85', 'Q_95',
+             'Q_10', 'Q_20', 'Q_30', 'Q_40', 'Q_50', 'Q_60', 'Q_70', 'Q_80', 'Q_90', 'Q_100')]
+d$Intellect <- sum(d[,c('Q_5', 'Q_15', 'Q_25', 'Q_35', 'Q_45', 'Q_55', 'Q_65', 'Q_75', 'Q_85', 'Q_95')])/10
+d$Openness <- sum(d[,c('Q_10', 'Q_20', 'Q_30', 'Q_40', 'Q_50', 'Q_60', 'Q_70', 'Q_80', 'Q_90', 'Q_100')])/10
+d$bfas_o <- (d$Openness + d$Intellect)/2
+
+####################################### Norming ###########################################################
+
+sub_scores <- d[,c(101:115)] 
+colors <- Aspects[7,]
+
+############################### Scaling ############################################################
+
+names <- c("Withdrawal","Volatility","Neuroticism","Compassion","Politeness","Agreeableness",   
+           "Industriousness","Orderliness","Conscientiousness","Enthusiasm","Assertiveness","Extraversion",   
+           "Intellect","Openness","Openness/Intellect")
+
+pnorms <- as.data.frame(matrix(, ncol = 15, nrow=1))
+names(norms) <- names
+names(pnorms) <- names
+names(sub_scores) <- names
+
+norms$Subject <- 0
+sub_scores$Subject <- 1
+
+norms <- rbind(norms,sub_scores)
+
+for (i in colnames(norms[1:15])) {
+  norms[[i]] <- scale(norms[[i]])
+}  
+
+scaled_sub <- subset(norms,Subject==1)
+
+for (i in colnames(scaled_sub)) {
+  pnorms[[i]] <- round(pnorm(scaled_sub[[i]][1])*100,0)
+}  
+
+sub <- rbind(sub_scores,scaled_sub,pnorms)
+sub <- sub[,-16]
+norms <- norms[,-16]
+
+n <- as.data.frame(matrix(, ncol = 2))
+for (i in colnames(norms)){
+  df <- as.data.frame(norms[,i])
+  df$V2 <- i
+  n <- rbind(n,df)
+}
+n <- n[-1,]
+names(n) <- c("Value","Personality")
+
+sub[4,] <- NA
+for (i in seq_along(sub)) {
+  p <- sub[[i]][3]
+  if(p %% 10 == 1 & p != 11){
+    l <- "st"
+  } else {
+    if((p - 2) %% 10 == 0 & p != 12){
+      l <- "nd"
+    } else {
+      if((p - 3) %% 10 == 0 & p != 13){
+        l <- "rd"
+      } else {
+        l <- "th"
+      }
+    }
+  }
+  sub[[i]][4] <- paste0(p, l, " percentile")
+}
+
+##########
+
+n$Personality <- factor(n$Personality, levels=names)
+
+sub[5,] <- c('#f3a83b','#c3872e','#824817', # Neuroticism
+             '#de6b68','#e0908d','#813f3c', # Agreeableness
+             '#5f94c8','#76b8f9','#406488', # Conscientiousness
+             '#a487f7','#836cc7','#594a87', # Extraversion
+             '#98ba93','#708a6c','#5a6a37') # Openness/Intellect
+
+max <- as.data.frame(matrix(, ncol = 15, nrow=5))
+names(max) <- names
+for (i in colnames(norms)) {
+  max[[i]][1] <- quantile(norms[[i]], .05)
+  max[[i]][2] <- quantile(norms[[i]], .25)
+  max[[i]][3] <- quantile(norms[[i]], .75)
+  max[[i]][4] <- quantile(norms[[i]], .95)
+  max[[i]][5] <- mean(norms[[i]])
+}
+
+scores <- as.data.frame(matrix(, ncol = 5, nrow=15))
+rownames(scores) <- names
+
+for (i in colnames(sub)){
+  scores[i,][[1]] <- sub[,i][[1]]
+  scores[i,][[2]] <- sub[,i][[2]]
+  scores[i,][[3]] <- sub[,i][[3]]
+  scores[i,][[4]] <- sub[,i][[4]]
+  scores[i,][[5]] <- sub[,i][[5]]
+}
+names(scores) <- c("score","z","perc","percentile","color")
+
+scores$q1 <- as.vector(t(max[1,]))
+scores$q2 <- as.vector(t(max[2,]))
+scores$q3 <- as.vector(t(max[3,]))
+scores$q4 <- as.vector(t(max[4,]))
+scores$mean <- as.vector(t(max[5,]))
+scores$h <- c("aspect","aspect","domain","aspect","aspect",
+              "domain","aspect","aspect","domain","aspect",
+              "aspect","domain","aspect","aspect","domain")
+scores$label <- NA
+for (i in rownames(scores)){
+  scores[i,][[12]] <- paste0("You scored at the ", scores[i,][[4]], " for this ", scores[i,][[11]]," of personality.",
+                             sep="")
+}
+
+scores$z <- as.numeric(scores$z)
+colnames(Aspects) <- names
+############################### Printing ###########################################################
+theme_set(theme_minimal())
+
+myplots <- vector('list', length(names))
+names(myplots) <- names
+mytext <- vector("list", length(names))
+names(mytext) <- names
+
+for (i in rownames(scores)) {  
+  nn <- subset(n, Personality==i)
+  xd <- data.frame(density(nn$Value)[c("x", "y")])
+  z <- scores[i,][[2]]; col <- scores[i,][[5]]; mean <- scores[i,][[10]];
+  q1 <- scores[i,][[6]]; q2 <- scores[i,][[7]]; q3 <- scores[i,][[8]];
+  q4 <- scores[i,][[9]]; label <- scores[i,][[11]]; name <- rownames(scores[i,])
+  m1 <- which.max(xd$y)
+  m2 <- xd$y[m1]
+  myplots[[i]] <- local({
+    i <- i
+    m <- ggplot(xd, aes(x, y)) + 
+      geom_area(data = subset(xd, x <= q1), fill=col, alpha=.2) +
+      geom_area(data = subset(xd, x <= q2 & x >= q1), fill=col, alpha=.4) +
+      geom_area(data = subset(xd, x >= q2 & x <= q3), fill=col, alpha=.6) +
+      geom_area(data = subset(xd, x >= q3 & x <= q4), fill=col, alpha=.4) +
+      geom_area(data = subset(xd, x >= q4), fill=col, alpha=.2) +
+      geom_area(data = xd, fill=col, alpha=.6) +
+      annotate(geom = "text", x = z, 
+               y = .47, label="You",angle=0,color="red", size=5) +
+      annotate('segment', x = z, xend = z, y = 0, yend = .44,              
+               size = 1, alpha = 0.8, color = "red") +
+      annotate('segment', x = mean, xend = mean, y = 0, yend = m2,              
+               size = .3, alpha = 0.4, linetype=1, color = "white") +
+      scale_x_continuous("", breaks=c(q1,q2,mean,q3,q4),
+                         labels=c("5%","25%","50%","75%","95%")) +
+      theme(plot.title = element_text(hjust = 0.5,size = 16),
+            plot.subtitle = element_text(hjust = 0.5, size = 10),
+            axis.title.y=element_blank(),
+            axis.text.y=element_blank(),
+            axis.ticks.y = element_blank(),
+            strip.background = element_blank(),
+            strip.text.y = element_blank(),
+            panel.grid = element_blank(),
+            panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank()) +
+      labs(x = "",
+           y = NULL,
+           title = toupper(rownames(scores[i,])),
+           subtitle = scores[i,][[12]])
+  })
+  
+  ############  ############
+  scores$perc <- as.numeric(scores$perc)
+  p <- scores[i,][[3]]
+  if(p <= 32){
+    text <- Aspects[[i]][2]
+  } else {
+    if(p > 32 & p <= 45){
+      text <- Aspects[[i]][3]
+    } else {
+      if(p > 45 & p <= 55){
+        text <- Aspects[[i]][4]
+      } else {
+        if(p > 55 & p <= 68){
+          text <- Aspects[[i]][5]
+        } else{
+          if(p > 68){
+            text <- Aspects[[i]][6]
+          }
+        }
+      }
+    }
+  }
+  mytext[[i]] <- local({
+    i <- i
+    c(Aspects[[i]][1],text,p,
+      Aspects[[i]][7], #  color
+      Aspects[[i]][8], #  light color
+      scores[i,][[4]]) 
+  })
+}
+
+
+
+####################################################################################
+# NACEO
+
+F_list <- vector('list', 5)
+
+F_list[[1]] <- mytext[c(1,2,3)]
+F_list[[2]] <- mytext[c(4,5,6)]
+F_list[[3]] <- mytext[c(7,8,9)]
+F_list[[4]] <- mytext[c(10,11,12)]
+F_list[[5]] <- mytext[c(13,14,15)]
+
+##########
+
+myrects <- vector('list', 5)
+
+invisible(for (i in 1:5) {
+  myrects[[i]] <- local({
+    i <- i
+    BF5 <- F_list[[i]]
+    
+    ############
+    
+    score <- str_wrap(paste(BF5[[3]][1], ": ", BF5[[3]][6], " ... ", BF5[[1]][1], ": ", BF5[[1]][6], 
+                            " ... ", BF5[[2]][1], ": ", BF5[[2]][6], sep=""), 94)
+    
+    light <- BF5[[3]][5]
+    light1 <- BF5[[1]][5]
+    light2 <- BF5[[2]][5]
+    med1 <- BF5[[1]][4]
+    med2 <- BF5[[2]][4]
+    dark <- BF5[[3]][4]
+    factor <- BF5[[3]][1]
+    aspect1 <- BF5[[1]][1]
+    aspect2 <- BF5[[2]][1]
+    
+    rects2 <- data.frame(x = 1:2,
+                         colors = c(med1, med2),
+                         text = c(BF5[[1]][1], BF5[[2]][1]))
+    
+    f.descript <- str_wrap(BF5[[3]][2], width = 79)
+    a1.descript <- str_wrap(BF5[[1]][2], width = 40)
+    a2.descript <- str_wrap(BF5[[2]][2], width = 40)
+    
+    p1 <- ggplot(rects2, aes(x, 2.4, fill = colors, label = text)) +
+                  geom_tile(width = 1, height = .1) + # make square tiles
+                  geom_text(color = c(dark, light), size = 5) + # add white text in the middle
+                  scale_fill_identity(guide = "none") + # color the tiles with the colors in the data frame
+                  coord_fixed()  +
+                  theme_void()
+
+    p1 <- p1 + geom_rect(aes(xmin = .5, xmax = 2.5, ymin = 2.95, ymax = 3.10),
+                         fill=dark) +
+      geom_text(aes(x = 1.5, y = 3.025,
+                    label = factor), colour = light, size = 7)
+    p1 <- p1 + geom_rect(aes(xmin = .5, xmax = 1.5, ymin = 1.75, ymax = 2.35),
+                         fill=light1) +
+      geom_text(aes(x = .6, y = 2.07,
+                    label = a1.descript), colour = dark, hjust = "left", size = 3.3)
+    p1 <- p1 + geom_rect(aes(xmin = 1.5, xmax = 2.5, ymin = 1.75, ymax = 2.35),
+                         fill=light2) +
+      geom_text(aes(x = 1.6, y = 2.07,
+                    label = a2.descript), colour = dark, hjust = "left", size = 3.3)
+    p1 <- p1 + geom_rect(aes(xmin = .5, xmax = 2.5, ymin = 1.65, ymax = 1.75),
+                         fill=dark) +
+      geom_text(aes(x = 1.5, y = 1.70,
+                    label = score), colour = light, size = 2.5, hjust="center")
+    desc <- p1 + geom_rect(aes(xmin = .5, xmax = 2.5, ymin = 2.45, ymax = 2.95),
+                           fill=light) +
+      geom_text(aes(x = .6, y = 2.71,
+                    label = f.descript), colour = dark, hjust = "left", size = 3.6)
+  })
+})
+
+######################
+
+Na <- ggarrange(ggarrange(myplots[[1]], myplots[[2]], ncol = 2),
+                nrow = 1,heights = c(1,1),widths = c(.5,1))
+Nf <- myplots[[3]]
+N <- ggarrange(Nf,myrects[[1]],Na,
+               nrow=3,ncol=1,heights = c(2,2.5,2), widths = c(.5,2.5,1))
+
+Aa <- ggarrange(ggarrange(myplots[[4]], myplots[[5]], ncol = 2),
+                nrow = 1,heights = c(1,1),widths = c(.5,1))
+Af <- myplots[[6]]
+A <- ggarrange(Af,myrects[[2]],Aa,
+               nrow=3,ncol=1,heights = c(2,2.5,2), widths = c(.5,2.5,1))
+
+Ca <- ggarrange(ggarrange(myplots[[7]], myplots[[8]], ncol = 2),
+                nrow = 1,heights = c(1,1),widths = c(.5,1))
+Cf <- myplots[[9]]
+C <- ggarrange(Cf,myrects[[3]],Ca,
+               nrow=3,ncol=1,heights = c(2,2.5,2), widths = c(.5,2.5,1))
+
+Ea <- ggarrange(ggarrange(myplots[[10]], myplots[[11]], ncol = 2),
+                nrow = 1,heights = c(1,1),widths = c(.5,1))
+Ef <- myplots[[12]]
+E <- ggarrange(Ef,myrects[[4]],Ea,
+               nrow=3,ncol=1,heights = c(2,2.5,2), widths = c(.5,2.5,1))
+
+Oa <- ggarrange(ggarrange(myplots[[13]], myplots[[14]], ncol = 2),
+                nrow = 1,heights = c(1,1),widths = c(.5,1))
+Of <- myplots[[15]]
+O <- ggarrange(Of,myrects[[5]],Oa,
+               nrow=3,ncol=1,heights = c(2,2.5,2), widths = c(.5,2.5,1))
+
+################################ final page ###############################################
+scores2 <- as.data.frame(matrix(, ncol = 15, nrow=12))
+colnames(scores2) <- names
+
+rows <- colnames(scores)
+for (i in rownames(scores)){
+  for (k in 1:length(scores)){
+    scores2[[i]][k] <- scores[i,][[k]]
+  }
+}
+rownames(scores2) <- rows
+
+################# Generating curves ###########
+
+blank <- subset(n,Personality=="Intellect")
+blank$Personality <- as.factor("poop")
+blank1 <- scores[13,]
+blank1$Personality <- "poop"
+blank1$color <- "#ffffff"
+n <- rbind(n,blank)
+scores$Personality <- rownames(scores)
+scores <- rbind(scores,blank1)
+
+thx <- "Thank you for taking the BFAS!"
+lab <- c("5%", "25%", "50%", "75%", "95%")
+pos <- c(-1.6, -.68, 0, .68, 1.7)
+colors <- scores$color
+you <- c(rep("red",15),"white")
+scores$y <- c(1:15,16.4)
+
+ridge <- n %>%
+  ggplot(aes(x=Value, y=Personality, fill=factor(Personality))) +
+  geom_density_ridges(scale = 1, rel_min_height = .01, alpha=.6, color=NA) +
+  geom_segment(data = scores, aes(x = z, xend = z, y = c(1:16),yend = c(1:16) + .8), color = you,
+               alpha=.6) +
+  geom_segment(data = scores, aes(x = mean, xend = mean, y = y, yend = y + 1), color = colors,
+               alpha=c(rep(.8,15),0), linetype = 2) +
+  geom_segment(data = scores, aes(x = q1, xend = q1, y = c(1:16),yend = c(1:16) + 1), color = colors,
+               alpha=.8, linetype = 3) +
+  geom_segment(data = scores, aes(x = q2, xend = q2, y = c(1:16),yend = c(1:16) + 1), color = colors,
+               alpha=.8, linetype = 3) +
+  geom_segment(data = scores, aes(x = q3, xend = q3, y = c(1:16),yend = c(1:16) + 1), color = colors,
+               alpha=.8, linetype = 3) +
+  geom_segment(data = scores, aes(x = q4, xend = q4, y = c(1:16),yend = c(1:16) + 1), color = colors,
+               alpha=.8, linetype = 3) +
+  geom_text(data = scores, 
+            aes(y = c(1:16), x = -3.7, label = percentile),
+            position=position_nudge(y= 0.3), 
+            colour= colors, 
+            size=3) +
+  geom_text(data = scores, 
+            aes(y = c(1:16), x = 3.7, label = Personality),
+            position=position_nudge(y= 0.3), 
+            colour= colors, 
+            size=4) +
+  theme_ridges(grid = FALSE, center = TRUE) +
+  scale_fill_manual(values=colors) +
+  annotate("text", x=0, y=16.8, label= thx, size = 4) + 
+  annotate("text", x=pos, y=16.3, label= lab, size = 2.5) + 
+  ylab("") +
+  xlab("") +
+  ggtitle("")
+ridge <- ridge + theme(legend.position = "none")
+ridge <- ridge + theme(axis.title.x=element_blank(),
+                       axis.text.x=element_blank(),
+                       axis.ticks.x=element_blank(),
+                       axis.title.y=element_blank(),
+                       axis.text.y=element_blank(),
+                       axis.ticks.y=element_blank())
+
+####################################
+
+dark <- "slategray"
+light <- "azure1"
+
+rects4 <- data.frame(x = 1:7,
+                     colors = c(dark,dark,dark,dark,dark,dark,dark),
+                     fill = c(dark,dark,dark,dark,dark,dark,dark),
+                     text = c("","","","Thank you for contributing your data!","","",""))
+final <- ggplot(rects4, aes(x, 2.4, fill = colors, color = dark, label = text)) +
+                 geom_tile(width = 1, height = .3) + # make square tiles
+                 geom_text(color = c(light,light,light,light,light,light,light), size = 5) + 
+                 scale_fill_identity(guide = "none") +
+                 scale_color_identity(guide = "none") +
+                 coord_fixed()  +
+                 theme_void()
+ref1 <- str_wrap("DeYoung, C. G., Quilty, L. C., & Peterson, J. B. (2007). 
+                 Between facets and domains: 10 aspects of the Big Five. Journal of personality and social psychology, 93(5), 880.", width = 120, exdent=4)
+ref2 <- str_wrap("DeYoung, C. G. (2015). Cybernetic big five theory. Journal of Research in Personality, 56, 33-58.", width = 120, exdent=4)
+ref3 <- str_wrap("Norm data for each aspect and factor are drawn from DeYoung, Quilty & Peterson (2007) and represent community sample.", width = 120, exdent=4)
+ref4 <- str_wrap("Survey scoring & results programmed and designed by Emily Willoughby.")
+
+ref <- paste(ref1, ref2, ref3, ref4, sep="\n")
+
+final <- final + geom_rect(aes(xmin = 0.5, xmax = 7.5, ymin = 1, ymax = 2.55),
+                           fill = light, color = dark) +
+  geom_text(aes(x = .8, y = 1.64,
+                label = ref), size = 3, colour = dark, hjust = "left")
+final <- final + geom_rect(aes(xmin = 0.5, xmax = 7.5, ymin = 2.25, ymax = 2.55),
+                           fill = dark, color = dark) +
+  geom_text(aes(x = 4, y = 2.4,
+                label = "References", colour = light, hjust = "center"))
+final_page <- invisible(ggarrange(ridge,
+                        final, heights = c(7,2), widths = c(1,2),
+                        nrow = 2, ncol=1))
+```
+
+```{r}
+print(O)
+print(C)
+print(E)
+print(A)
+print(N)
+print(final_page)
+```
+
+

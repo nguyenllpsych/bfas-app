@@ -164,6 +164,9 @@ bfas_bank <- data.frame(
             "See beauty in things that others might not notice.")
 )
 
+# norming data
+Aspects <- read.csv("data/Aspects.csv")
+norms   <- read.delim("data/BFAS_norms.txt")
 
 # -------------- Define UI -------------- #
 
@@ -291,10 +294,9 @@ ui <- fluidPage(
                           ))),
         tabPanel("Download",
                  #test data cleaning
-                 tableOutput("test")
-                 #downloadButton("downloadData", "Download data"),
-                 #dataTableOutput("data"),
-                 #dataTableOutput("average")
+                 tableOutput("test"),
+                 plotOutput("reports"),
+                 downloadButton("report", "Generate report")
         )))
 )
 
@@ -303,6 +305,10 @@ ui <- fluidPage(
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
+  
+  # load norm data
+  Aspects <- read.csv("data/Aspects.csv")
+  norms   <- read.delim("data/BFAS_norms.txt")
   
   # measure instructions
   output$instruction <- renderText({paste("<br/> Here are a number of characteristics that may or may not describe you.  
@@ -318,67 +324,38 @@ server <- function(input, output) {
     data <- sapply(grep(pattern = "Q_+[[:digit:]]", x = names(input), value = TRUE), 
                         function(x) as.numeric(input[[x]]))
     
-    # reverse score
-    cols <- c('Q_1','Q_21','Q_41','Q_71',
-          'Q_16','Q_36','Q_56','Q_76',
-          'Q_2','Q_32','Q_52','Q_62','Q_82',
-          'Q_17','Q_37','Q_67','Q_77','Q_87','Q_97',
-          'Q_13','Q_23','Q_33','Q_53','Q_83','Q_93',
-          'Q_8','Q_48','Q_68','Q_78',
-          'Q_14','Q_24','Q_34','Q_54','Q_64',
-          'Q_29','Q_49','Q_79','Q_99',
-          'Q_15','Q_45','Q_55','Q_85',
-          'Q_50','Q_60','Q_80','Q_90')
-    
-    data[cols] <- 6 - data[cols]
-    
-    data <- t(data)
-    
-    # neuroticism scores
-    N <- c('Q_1', 'Q_11', 'Q_21', 'Q_31', 'Q_41', 'Q_51', 'Q_61', 'Q_71', 'Q_81', 'Q_91',
-           'Q_6', 'Q_16', 'Q_26', 'Q_36', 'Q_46', 'Q_56', 'Q_66', 'Q_76', 'Q_86', 'Q_96')
-    Withdrawal <- sum(data[,N[1:10]])/10
-    Volatility <- sum(data[,N[11:20]])/10
-    bfas_n <- (Withdrawal + Volatility)/2
-    data   <- cbind(data, Withdrawal, Volatility, bfas_n)
-
-    # agreeableness scores
-    A <- c('Q_2','Q_12', 'Q_22', 'Q_32', 'Q_42', 'Q_52', 'Q_62', 'Q_72', 'Q_82', 'Q_92',
-           'Q_7', 'Q_17', 'Q_27', 'Q_37', 'Q_47', 'Q_57', 'Q_67', 'Q_77', 'Q_87', 'Q_97')
-    Compassion <- sum(data[,A[1:10]])/10
-    Politeness <- sum(data[,A[11:20]])/10
-    bfas_a <- (Compassion + Politeness)/2
-    data   <- cbind(data, Compassion, Politeness, bfas_a)
-
-    # agreeableness scores
-    C <- c('Q_3', 'Q_13', 'Q_23', 'Q_33', 'Q_43', 'Q_53', 'Q_63', 'Q_73', 'Q_83', 'Q_93',
-           'Q_8', 'Q_18', 'Q_28', 'Q_38', 'Q_48', 'Q_58', 'Q_68', 'Q_78', 'Q_88', 'Q_98')
-    Industriousness <- sum(data[,C[1:10]])/10
-    Orderliness     <- sum(data[,C[11:20]])/10
-    bfas_c <- (Industriousness + Orderliness)/2
-    data   <- cbind(data, Industriousness, Orderliness, bfas_c)
-
-    # extraversion scores
-    E <- c('Q_4', 'Q_14', 'Q_24', 'Q_34', 'Q_44', 'Q_54', 'Q_64', 'Q_74', 'Q_84', 'Q_94',
-           'Q_9', 'Q_19', 'Q_29', 'Q_39', 'Q_49', 'Q_59', 'Q_69', 'Q_79', 'Q_89', 'Q_99')
-    Enthusiasm    <- sum(data[,E[1:10]])/10
-    Assertiveness <- sum(data[,E[11:20]])/10
-    bfas_e <- (Enthusiasm + Assertiveness)/2
-    data   <- cbind(data, Enthusiasm, Assertiveness, bfas_e)
-
-    # openness/intellect scores
-    O <- c('Q_5', 'Q_15', 'Q_25', 'Q_35', 'Q_45', 'Q_55', 'Q_65', 'Q_75', 'Q_85', 'Q_95',
-           'Q_10', 'Q_20', 'Q_30', 'Q_40', 'Q_50', 'Q_60', 'Q_70', 'Q_80', 'Q_90', 'Q_100')
-    Intellect <- sum(data[,O[1:10]])/10
-    Openness  <- sum(data[,O[11:20]])/10
-    bfas_o <- (Intellect + Openness)/2
-    data   <- cbind(data, Intellect, Openness, bfas_o)
+    data <- as.data.frame(t(data))
 
     data
-    })
+  })
   
-  output$test <- renderTable(bfas_data())
-}
+  # personal report
+    output$report <- downloadHandler(
+      
+      filename = "report.pdf",
+      content = function(file) {
+        # Copy the report file to a temporary directory before processing it, in
+        # case we don't have write permissions to the current working dir (which
+        # can happen when deployed).
+        
+        tempReport <- file.path(tempdir(), "report.Rmd")
+        file.copy("report.Rmd", tempReport, overwrite = TRUE)
+
+        # Set up parameters to pass to Rmd document
+        params <- list(d       = bfas_data(),
+                       Aspects = Aspects,
+                       norms   = norms)
+
+        # Knit the document, passing in the `params` list, and eval it in a
+        # child of the global environment (this isolates the code in the document
+        # from the code in this app).
+        rmarkdown::render(tempReport, output_file = file,
+          params = params,
+          envir = new.env(parent = globalenv())
+        )
+      }
+    )
+  }
 
 # Run the application 
 shinyApp(ui = ui, server = server)
