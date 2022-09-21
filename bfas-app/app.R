@@ -12,6 +12,7 @@ library("ggridges")
 library("stringr")
 library("dplyr")
 library("tidyr")
+library("shinyRadioMatrix")
 
 # BFAS questionnaire
 bfas_bank <- data.frame(
@@ -118,6 +119,9 @@ bfas_bank <- data.frame(
             "See beauty in things that others might not notice.")
 )
 
+# TODO: bfas_random currently not truly random
+bfas_random <- bfas_bank[sample(1:100),]
+
 # norming data
 Aspects <- readRDS("Aspects.RData")
 norms   <- readRDS("norms.RData")
@@ -138,7 +142,8 @@ ui <- fluidPage(
       
       # First tab with introduction
       tabPanel("Introduction", 
-               htmlOutput("introduction")),
+               htmlOutput("introduction")
+               ),
       
       # Second tab with the questionnaire
       tabPanel("Take the Survey",
@@ -149,19 +154,17 @@ ui <- fluidPage(
                # randomize bfas question order
                fluidRow(
                  column(12,
-                        lapply(sample(1:100), function(i) {
-                          radioButtons(
-                            inputId  = paste0(bfas_bank[i, 1]), 
-                            label    = paste0(bfas_bank[i, 2]),
-                            #TODO: preselected for easy testing but should be character(0)
-                            selected = 3,
-                            choiceNames  = c("Strongly disagree", 
-                                             "Disagree",
-                                             "Neither agree nor disagree",
-                                             "Agree", 
-                                             "Strongly agree"),
-                            choiceValues = c(1:5))
-               }))), # END BFAS
+                        #TODO: preselected for easy testing but should be character(0)
+                        radioMatrixInput(inputId = "data", rowIDs = bfas_random$var,
+                                         rowLLabels = bfas_random$item,
+                                         choiceNames= c("Strongly disagree",
+                                                        "Disagree",
+                                                        "Neither agree nor disagree",
+                                                        "Agree",
+                                                        "Strongly agree"),
+                                         choiceValues = c(1:5),
+                                         selected = rep(3, 100))
+                )), # END BFAS
                
                # download
                fluidRow(
@@ -358,43 +361,40 @@ server <- function(input, output) {
   
   # extract user inputted bfas data
   bfas_data <- reactive({
-    
-    data <- sapply(grep(pattern = "Q_+[[:digit:]]", 
-                        x = names(input), value = TRUE), 
-                        function(x) as.numeric(input[[x]]))
-    
-    data <- as.data.frame(t(data))
+    data <- as.data.frame(matrix(as.numeric(input$data),
+                          ncol = 100, nrow = 1))
+    names(data) <- bfas_random$var
     data
-  })
-  
+    })
+
   # personal report download
   # will take at least a few seconds!!!
-    output$report <- downloadHandler(
+  output$report <- downloadHandler(
+    
+    filename = "my_personality.pdf",
+    content = function(file) {
       
-      filename = "my_personality.pdf",
-      content = function(file) {
-        
-        # Copy the report file to a temporary directory before processing it, in
-        # case we don't have write permissions to the current working dir (which
-        # can happen when deployed).
-        tempReport <- file.path(tempdir(), "report.Rmd")
-        file.copy("report.Rmd", tempReport, overwrite = TRUE)
+      # Copy the report file to a temporary directory before processing it, in
+      # case we don't have write permissions to the current working dir (which
+      # can happen when deployed).
+      tempReport <- file.path(tempdir(), "report.Rmd")
+      file.copy("report.Rmd", tempReport, overwrite = TRUE)
 
-        # Set up parameters to pass to Rmd document
-        params <- list(d       = bfas_data(),
-                       Aspects = Aspects,
-                       norms   = norms)
+      # Set up parameters to pass to Rmd document
+      params <- list(d       = bfas_data(),
+                     Aspects = Aspects,
+                     norms   = norms)
 
-        # Knit the document, passing in the `params` list, and eval it in a
-        # child of the global environment (this isolates the code in the document
-        # from the code in this app).
-        rmarkdown::render(tempReport, output_file = file,
-                          params = params,
-                          envir = new.env(parent = globalenv())
-        )
-      }
-    )
-  } # END server
+      # Knit the document, passing in the `params` list, and eval it in a
+      # child of the global environment (this isolates the code in the document
+      # from the code in this app).
+      rmarkdown::render(tempReport, output_file = file,
+                        params = params,
+                        envir = new.env(parent = globalenv())
+      )
+    }
+  )
+} # END server
 
 # Run the application 
 shinyApp(ui = ui, server = server)
