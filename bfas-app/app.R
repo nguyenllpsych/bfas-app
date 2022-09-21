@@ -1,63 +1,17 @@
 # -------------- Set-up -------------- #
 
 # libraries
-require(devtools)
-
-library_list <- data.frame(
-    libraries = c("prettyGraphs",
-                  "ggplot2",  
-                  "ggthemes", 
-                  "diagram",  
-                  "graphics", 
-                  "ggpubr",   
-                  "ggridges", 
-                  "stringr",  
-                  "dplyr",
-                  "tidyr",
-                  "shiny"),
-    versions  = c('2.1.6',
-                  '3.3.5',
-                  '4.2.4',
-                  '1.6.5',
-                  '4.1.3',
-                  '0.4.0',
-                  '0.5.3',
-                  '1.4.0',
-                  '1.0.8',
-                  '1.2.0',
-                  '1.7.0')
-)
-
-installed_packages <- data.frame(
-    libraries = rownames(installed.packages()),
-    versions  = as.data.frame(installed.packages())$Version)
-installed_packages <- subset(installed_packages,
-                             libraries %in% library_list$libraries)
-
-for (pkg in seq_len(nrow(library_list))) {
-    
-    # pull out required package
-    required_pkg   <- library_list[pkg, "libraries"]
-    required_vers  <- library_list[pkg, "versions"]
-    
-    if (required_pkg %in% installed_packages$libraries) {
-        
-        # pull out package versions
-        installed_vers <- installed_packages[which(installed_packages$libraries == required_pkg), "versions"]
-        
-        if (installed_vers != required_vers) {
-            devtools::install_version(package = required_pkg,
-                                      version = required_vers,
-                                      upgrade = "never")    
-        }
-    } else {
-        devtools::install_version(package = required_pkg,
-                                  version = required_vers,
-                                  upgrade = "never")
-    }
-} # END for pkg LOOP
-
-invisible(lapply(library_list$libraries, library, character.only = TRUE))
+library("shiny")
+library("prettyGraphs")
+library("ggplot2")
+library("diagram")
+library("ggthemes")
+library("graphics")
+library("ggpubr")
+library("ggridges")
+library("stringr")
+library("dplyr")
+library("tidyr")
 
 # BFAS questionnaire
 bfas_bank <- data.frame(
@@ -165,8 +119,8 @@ bfas_bank <- data.frame(
 )
 
 # norming data
-Aspects <- read.csv("data/Aspects.csv")
-norms   <- read.delim("data/BFAS_norms.txt")
+Aspects <- readRDS("Aspects.RData")
+norms   <- readRDS("norms.RData")
 
 # -------------- Define UI -------------- #
 
@@ -177,167 +131,186 @@ ui <- fluidPage(
   # Application title
   titlePanel("Big Five Aspect Scale"),
   
-  # Main panel with questionnaire and info
+  # Side panel with info -- cannot be used with bs_theme
+  #sidebarPanel(
+  #  fluidRow(column(12,
+  #                  htmlOutput("introduction")))
+  #),
+  
+  # Main panel with questionnaire
   mainPanel(
-      tabsetPanel(
-        type = "tabs",
-        tabPanel("Take the survey",
-                 fluidRow(htmlOutput("instruction")),
-                 
-                 # randomize bfas question order
-                 fluidRow(
-                   column(12,
-                          lapply(sample(1:100), function(i) {
-                            radioButtons(inputId  = paste0(bfas_bank[i, 1]), 
-                                         label    = paste0(bfas_bank[i, 2]),
-                                         #TODO: preselected for easy testing but should be character(0)
-                                         selected = 1,
-                                         choiceNames  = c("Strongly disagree", "Disagree",
-                                                          "Neither agree nor disagree",
-                                                          "Agree", "Strongly agree"),
-                                         choiceValues = c(1:5))
-                    }))),
-                 
-                 # demographics
-                 fluidRow(htmlOutput("demographics")),
+    fluidRow(htmlOutput("instruction")),
+    
+    # randomize bfas question order
+    fluidRow(
+      column(12,
+             lapply(sample(1:100), function(i) {
+               radioButtons(
+                 inputId  = paste0(bfas_bank[i, 1]), 
+                 label    = paste0(bfas_bank[i, 2]),
+                 #TODO: preselected for easy testing but should be character(0)
+                 selected = 3,
+                 choiceNames  = c("Strongly disagree", 
+                                  "Disagree",
+                                  "Neither agree nor disagree",
+                                  "Agree", 
+                                  "Strongly agree"),
+                 choiceValues = c(1:5))
+    }))), # END BFAS
+    
+    # download
+    fluidRow(
+      column(12,
+             htmlOutput("download"),
+             downloadButton("report", "Generate report"))),
 
-                 fluidRow(
-                   column(12,
-                          selectInput(inputId = "age",
-                                      label   = "What is your age?",
-                                      choices = c("Under 12 years old",
-                                                  "12-17 years old",
-                                                  "18-24 years old",
-                                                  "25-34 years old",
-                                                  "35-44 years old",
-                                                  "45-54 years old",
-                                                  "55-64 years old",
-                                                  "65-74 years old",
-                                                  "75 years or older")),
-                          selectInput(inputId = "gender",
-                                      label   = "What is your current gender identity?",
-                                      choices = c("Female", "Male", "Other", "Prefer not to answer")),
-                          selectInput(inputId = "race",
-                                      label   = "What race/ethnicity group(s) do you belong to?",
-                                      choices = c("Arab or Middle Eastern", 
-                                                  "East Asian",
-                                                  "South Asian",
-                                                  "Black, African, or Caribbean",
-                                                  "Hispanic or Latino",
-                                                  "Pacific Islander",
-                                                  "White, Caucasian, or European",
-                                                  "Mixed; Parents are from two different ethnic groups",
-                                                  "Other",
-                                                  "Prefer not to answer"),
-                                      multiple = TRUE),
-                          selectInput(inputId = "region",
-                                      label   = "What geographical region do you currently live in?",
-                                      choices = c("Africa", "Asia", 
-                                                  "North America", "South America",
-                                                  "Europe", "Oceania")),
-                          selectInput(inputId = "religion",
-                                      label   = "What is your present religious affiliation, if any?",
-                                      choices = c("Buddhist", "Christian",
-                                                  "Hindu, Muslim", "Agnostic",
-                                                  "Atheist", "Other", 
-                                                  "Prefer not to answer")),
-                          selectInput(inputId = "relationship",
-                                      label   = "What is your relationship status",
-                                      choices = c("Single (never married)",
-                                                  "Dating one person exclusively",
-                                                  "Dating multiple people",
-                                                  "Married or in a domestic partnership",
-                                                  "Divorced or Separated",
-                                                  "Widowed",
-                                                  "Prefer not to answer")),
-                          selectInput(inputId = "education",
-                                      label   = "What level of schooling have you completed?",
-                                      choices = c("No school",
-                                                  "Primary/elementary school",
-                                                  "Some high school",
-                                                  "Graduated high school",
-                                                  "Trade/Technical/Vocational training",
-                                                  "Some undergraduate education (college or university)",
-                                                  "Bachelor's degree",
-                                                  "Master's degree",
-                                                  "Doctoral or professional degree",
-                                                  "Prefer not to answer")),
-                          selectInput(inputId = "employment",
-                                      label   = "What is your current professional or employment status?",
-                                      choices = c("Employed for wages",
-                                                  "Self-employed",
-                                                  "Unemployed",
-                                                  "Homemaker",
-                                                  "Student",
-                                                  "Retired",
-                                                  "Prefer not to answer")),
-                          selectInput(inputId = "income",
-                                      label   = "What is your annual household income in US Dollars?",
-                                      choices = c("Less than 10,000",
-                                                  "10,000 to 19,999",
-                                                  "20,000 to 34,999",
-                                                  "35,000 to 49,999",
-                                                  "50,000 to 74,999",
-                                                  "75,000 to 99,999",
-                                                  "Over 100,000",
-                                                  "Prefer not to answer")),
-                          selectInput(inputId = "english",
-                                      label   = "How well do you speak English?",
-                                      choices = c("Very well (fluent/native)",
-                                                  "Well",
-                                                  "Not very well",
-                                                  "Not at all", 
-                                                  "Prefer not to answer")),
-                          selectInput(inputId = "repeat",
-                                      label   = "Have you taken this survey before?",
-                                      choices = c("Yes", "No"))
-                          ))),
-        tabPanel("Download",
-                 #test data cleaning
-                 tableOutput("test"),
-                 plotOutput("reports"),
-                 downloadButton("report", "Generate report")
-        )))
-)
+    
+    # demographics
+    fluidRow(
+      column(12,
+             htmlOutput("demographics"),
+             numericInput(inputId = "age",
+                          label   = "What is your age?",
+                          value   = character(0),
+                          min     = 1,
+                          max     = 100),
+             selectInput(inputId = "gender",
+                         label   = "What is your current gender identity?",
+                         choices = c("Female", "Male", "Other", "Prefer not to answer"),
+                         selected = "Prefer not to answer"),
+             selectInput(inputId = "race",
+                         label   = "What race/ethnicity group(s) do you belong to?",
+                         choices = c("Arab or Middle Eastern", 
+                                     "East Asian",
+                                     "South Asian",
+                                     "Black, African, or Caribbean",
+                                     "Hispanic or Latino",
+                                     "Pacific Islander",
+                                     "White, Caucasian, or European",
+                                     "Mixed; Parents are from two different ethnic groups",
+                                     "Other",
+                                     "Prefer not to answer"),
+                         multiple = TRUE),
+             selectInput(inputId = "region",
+                         label   = "What geographical region do you currently live in?",
+                         choices = c("Africa", "Asia", 
+                                     "North America", "South America",
+                                     "Europe", "Oceania",
+                                     "Prefer not to answer"),
+                         selected = "Prefer not to answer"),
+             selectInput(inputId = "religion",
+                         label   = "What is your present religious affiliation, if any?",
+                         choices = c("Buddhist", "Christian",
+                                     "Hindu, Muslim", "Agnostic",
+                                     "Atheist", "Other", 
+                                     "Prefer not to answer"),
+                         selected = "Prefer not to answer"),
+             selectInput(inputId = "relationship",
+                         label   = "What is your relationship status",
+                         choices = c("Single (never married)",
+                                     "Dating one person exclusively",
+                                     "Dating multiple people",
+                                     "Married or in a domestic partnership",
+                                     "Divorced or Separated",
+                                     "Widowed",
+                                     "Prefer not to answer"),
+                         selected = "Prefer not to answer"),
+             selectInput(inputId = "education",
+                         label   = "What level of schooling have you completed?",
+                         choices = c("No school",
+                                     "Primary/elementary school",
+                                     "Some high school",
+                                     "Graduated high school",
+                                     "Trade/Technical/Vocational training",
+                                     "Some undergraduate education (college or university)",
+                                     "Bachelor's degree",
+                                     "Master's degree",
+                                     "Doctoral or professional degree",
+                                     "Prefer not to answer"),
+                         selected = "Prefer not to answer"),
+             selectInput(inputId = "employment",
+                         label   = "What is your current professional or employment status?",
+                         choices = c("Employed for wages",
+                                     "Self-employed",
+                                     "Unemployed",
+                                     "Homemaker",
+                                     "Student",
+                                     "Retired",
+                                     "Prefer not to answer"),
+                         selected = "Prefer not to answer"),
+             selectInput(inputId = "income",
+                         label   = "What is your annual household income in US Dollars?",
+                         choices = c("Less than 10,000",
+                                     "10,000 to 19,999",
+                                     "20,000 to 34,999",                                                  
+                                     "35,000 to 49,999",
+                                     "50,000 to 74,999",
+                                     "75,000 to 99,999",
+                                     "Over 100,000",
+                                     "Prefer not to answer"),
+                         selected = "Prefer not to answer"),
+             selectInput(inputId = "english",
+                         label   = "How well do you speak English?",
+                         choices = c("Very well (fluent/native)",
+                                     "Well",
+                                     "Not very well",
+                                     "Not at all", 
+                                     "Prefer not to answer"),
+                         selected = "Prefer not to answer"),
+             selectInput(inputId = "repeat",
+                         label   = "Have you taken this survey before?",
+                         choices = c("No", "Yes"))
+    ))) # END demographics
+) # END UI
 
 # -------------- Server logic -------------- #
-
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
   
-  # load norm data
-  Aspects <- read.csv("data/Aspects.csv")
-  norms   <- read.delim("data/BFAS_norms.txt")
+  # instructions and information
+  output$introduction <- renderText({
+    "SOME INTRODUCTION HERE"
+  })
   
-  # measure instructions
-  output$instruction <- renderText({paste("<br/> Here are a number of characteristics that may or may not describe you.  
-  For example, do you agree that you <i> seldom feel blue </i>?
-  Please indicate the extent to which you agree or disagree with each statement listed below.  
-  Be as honest as possible, but rely on your initial feeling and do not think too much about each item. <br/> <br/> <br/>")})
+  output$instruction <- renderText({
+  paste("<br/> Here are a number of characteristics that may or may not describe
+  you.  For example, do you agree that you <i> seldom feel blue </i>?  
+  Please indicate the extent to which you agree or disagree with each statement 
+  listed below.  Be as honest as possible, but rely on your initial feeling and 
+  do not think too much about each item. <br/> <br/> <br/>")})
   
-  output$demographics <- renderText({paste("<br/> ---------------- <br/>
-                                           For more accurate results, please also provide us with more demographic information <br/> <br/>")})
-  # extract and clean data
+  output$demographics <- renderText({
+  paste("<br/> ---------------- <br/>
+        As you wait for your report, 
+        please also provide us with some more information. <br/> <br/>")})
+  
+  output$download <- renderText({
+  paste("<br/> ---------------- <br/>
+        Please click on the button below when you are finished. 
+        Please allow for a few minutes to generate the report. <br/> <br/>")})
+  
+  # extract user inputted bfas data
   bfas_data <- reactive({
     
-    data <- sapply(grep(pattern = "Q_+[[:digit:]]", x = names(input), value = TRUE), 
+    data <- sapply(grep(pattern = "Q_+[[:digit:]]", 
+                        x = names(input), value = TRUE), 
                         function(x) as.numeric(input[[x]]))
     
     data <- as.data.frame(t(data))
-
     data
   })
   
-  # personal report
+  # personal report download
+  # will take at least a few seconds!!!
     output$report <- downloadHandler(
       
-      filename = "report.pdf",
+      filename = "my_personality.pdf",
       content = function(file) {
+        
         # Copy the report file to a temporary directory before processing it, in
         # case we don't have write permissions to the current working dir (which
         # can happen when deployed).
-        
         tempReport <- file.path(tempdir(), "report.Rmd")
         file.copy("report.Rmd", tempReport, overwrite = TRUE)
 
@@ -350,12 +323,12 @@ server <- function(input, output) {
         # child of the global environment (this isolates the code in the document
         # from the code in this app).
         rmarkdown::render(tempReport, output_file = file,
-          params = params,
-          envir = new.env(parent = globalenv())
+                          params = params,
+                          envir = new.env(parent = globalenv())
         )
       }
     )
-  }
+  } # END server
 
 # Run the application 
 shinyApp(ui = ui, server = server)

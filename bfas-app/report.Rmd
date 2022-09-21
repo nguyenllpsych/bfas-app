@@ -1,6 +1,5 @@
 ---
-title: "Your BFAS Report"
-date: "`r Sys.Date()`"
+title: "My Personality Report"
 output: pdf_document
 params:
   d: NA
@@ -11,15 +10,18 @@ params:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 
-# Install packages not yet installed
-packages <- c("prettyGraphs","ggplot2","ggthemes","diagram","graphics","ggpubr",
-              "ggridges","stringr","dplyr","tidyr")
-installed_packages <- packages %in% rownames(installed.packages())
-if (any(installed_packages == FALSE)) {
-  install.packages(packages[!installed_packages])
-}
-invisible(lapply(packages, library, character.only = TRUE))
-
+# libraries
+library("shiny")
+library("prettyGraphs")
+library("ggplot2")
+library("diagram")
+library("ggthemes")
+library("graphics")
+library("ggpubr")
+library("ggridges")
+library("stringr")
+library("dplyr")
+library("tidyr")
 ```
 
 ```{r include = FALSE}
@@ -214,16 +216,17 @@ for (i in rownames(scores)) {
       geom_area(data = subset(xd, x >= q4), fill=col, alpha=.2) +
       geom_area(data = xd, fill=col, alpha=.6) +
       annotate(geom = "text", x = z, 
-               y = .47, label="You",angle=0,color="red", size=5) +
+               y = .47, label="You",angle=0,color="red", size=3) +
       annotate('segment', x = z, xend = z, y = 0, yend = .44,              
                size = 1, alpha = 0.8, color = "red") +
       annotate('segment', x = mean, xend = mean, y = 0, yend = m2,              
                size = .3, alpha = 0.4, linetype=1, color = "white") +
       scale_x_continuous("", breaks=c(q1,q2,mean,q3,q4),
                          labels=c("5%","25%","50%","75%","95%")) +
-      theme(plot.title = element_text(hjust = 0.5,size = 16),
-            plot.subtitle = element_text(hjust = 0.5, size = 10),
+      theme(plot.title = element_text(hjust = 0.5,size = 15),
+            plot.subtitle = element_text(hjust = 0.5, size = 8),
             axis.title.y=element_blank(),
+            axis.text.x=element_text(size = 7),
             axis.text.y=element_blank(),
             axis.ticks.y = element_blank(),
             strip.background = element_blank(),
@@ -293,7 +296,7 @@ invisible(for (i in 1:5) {
     ############
     
     score <- str_wrap(paste(BF5[[3]][1], ": ", BF5[[3]][6], " ... ", BF5[[1]][1], ": ", BF5[[1]][6], 
-                            " ... ", BF5[[2]][1], ": ", BF5[[2]][6], sep=""), 94)
+                            " ... ", BF5[[2]][1], ": ", BF5[[2]][6], sep=""), 110)
     
     light <- BF5[[3]][5]
     light1 <- BF5[[1]][5]
@@ -306,40 +309,52 @@ invisible(for (i in 1:5) {
     aspect2 <- BF5[[2]][1]
     
     rects2 <- data.frame(x = 1:2,
-                         colors = c(med1, med2),
+                         colors = c(dark, dark),
                          text = c(BF5[[1]][1], BF5[[2]][1]))
     
-    f.descript <- str_wrap(BF5[[3]][2], width = 79)
-    a1.descript <- str_wrap(BF5[[1]][2], width = 40)
-    a2.descript <- str_wrap(BF5[[2]][2], width = 40)
+    f.descript <- str_wrap(BF5[[3]][2], width = 130)
+    a1.descript <- str_wrap(BF5[[1]][2], width = 62)
+    a2.descript <- str_wrap(BF5[[2]][2], width = 62)
     
     p1 <- ggplot(rects2, aes(x, 2.4, fill = colors, label = text)) +
-                  geom_tile(width = 1, height = .1) + # make square tiles
-                  geom_text(color = c(dark, light), size = 5) + # add white text in the middle
+                  geom_tile(width = 5, height = .1) + # make square tiles
+                  geom_text(color = c(light), size = 3.6) + # add white text in the middle
                   scale_fill_identity(guide = "none") + # color the tiles with the colors in the data frame
                   coord_fixed()  +
                   theme_void()
-
-    p1 <- p1 + geom_rect(aes(xmin = .5, xmax = 2.5, ymin = 2.95, ymax = 3.10),
+    
+    # top rect
+    p1 <- p1 + geom_rect(aes(xmin = -1.5, xmax = 4.5, ymin = 3.15, ymax = 3.30),
                          fill=dark) +
-      geom_text(aes(x = 1.5, y = 3.025,
-                    label = factor), colour = light, size = 7)
-    p1 <- p1 + geom_rect(aes(xmin = .5, xmax = 1.5, ymin = 1.75, ymax = 2.35),
+      geom_text(aes(x = 1.5, y = 3.23,
+                    label = factor), colour = light, size = 4.6)
+    
+    # second from bottom rect - left
+    p1 <- p1 + geom_rect(aes(xmin = -1.5, xmax = 1.5, ymin = 1.55, ymax = 2.45),
                          fill=light1) +
-      geom_text(aes(x = .6, y = 2.07,
-                    label = a1.descript), colour = dark, hjust = "left", size = 3.3)
-    p1 <- p1 + geom_rect(aes(xmin = 1.5, xmax = 2.5, ymin = 1.75, ymax = 2.35),
+      geom_text(aes(x = -1.4, y = 1.97,
+                    label = a1.descript), colour = dark, 
+                hjust = "left", size = 2.6)
+    
+    # second from bottom rect - right
+    p1 <- p1 + geom_rect(aes(xmin = 1.5, xmax = 4.5, ymin = 1.55, ymax = 2.45),
                          fill=light2) +
-      geom_text(aes(x = 1.6, y = 2.07,
-                    label = a2.descript), colour = dark, hjust = "left", size = 3.3)
-    p1 <- p1 + geom_rect(aes(xmin = .5, xmax = 2.5, ymin = 1.65, ymax = 1.75),
+      geom_text(aes(x = 1.6, y = 1.97,
+                    label = a2.descript), colour = dark, 
+                hjust = "left", size = 2.6)
+    
+    # bottom rect
+    p1 <- p1 + geom_rect(aes(xmin = -1.5, xmax = 4.5, ymin = 1.45, ymax = 1.55),
                          fill=dark) +
-      geom_text(aes(x = 1.5, y = 1.70,
-                    label = score), colour = light, size = 2.5, hjust="center")
-    desc <- p1 + geom_rect(aes(xmin = .5, xmax = 2.5, ymin = 2.45, ymax = 2.95),
+      geom_text(aes(x = 1.5, y = 1.50,
+                    label = score), colour = light, size = 2, hjust="center")
+    
+    # second from top rect
+    desc <- p1 + geom_rect(aes(xmin = -1.5, xmax = 4.5, ymin = 2.45, ymax = 3.15),
                            fill=light) +
-      geom_text(aes(x = .6, y = 2.71,
-                    label = f.descript), colour = dark, hjust = "left", size = 3.6)
+      geom_text(aes(x = -1.4, y = 2.81,
+                    label = f.descript), colour = dark, 
+                hjust = "left", size = 2.6)
   })
 })
 
@@ -373,7 +388,7 @@ Oa <- ggarrange(ggarrange(myplots[[13]], myplots[[14]], ncol = 2),
                 nrow = 1,heights = c(1,1),widths = c(.5,1))
 Of <- myplots[[15]]
 O <- ggarrange(Of,myrects[[5]],Oa,
-               nrow=3,ncol=1,heights = c(2,2.5,2), widths = c(.5,2.5,1))
+               nrow=3,ncol=1,heights = c(1,1),widths = c(.5,1))
 
 ################################ final page ###############################################
 scores2 <- as.data.frame(matrix(, ncol = 15, nrow=12))
@@ -462,17 +477,17 @@ final <- ggplot(rects4, aes(x, 2.4, fill = colors, color = dark, label = text)) 
                  coord_fixed()  +
                  theme_void()
 ref1 <- str_wrap("DeYoung, C. G., Quilty, L. C., & Peterson, J. B. (2007). 
-                 Between facets and domains: 10 aspects of the Big Five. Journal of personality and social psychology, 93(5), 880.", width = 120, exdent=4)
-ref2 <- str_wrap("DeYoung, C. G. (2015). Cybernetic big five theory. Journal of Research in Personality, 56, 33-58.", width = 120, exdent=4)
-ref3 <- str_wrap("Norm data for each aspect and factor are drawn from DeYoung, Quilty & Peterson (2007) and represent community sample.", width = 120, exdent=4)
-ref4 <- str_wrap("Survey scoring & results programmed and designed by Emily Willoughby.")
+                 Between facets and domains: 10 aspects of the Big Five. Journal of personality and social psychology, 93(5), 880.", width = 115, exdent=4)
+ref2 <- str_wrap("DeYoung, C. G. (2015). Cybernetic big five theory. Journal of Research in Personality, 56, 33-58.", width = 115, exdent=4)
+ref3 <- str_wrap("Norm data for each aspect and factor are drawn from DeYoung, Quilty & Peterson (2007) and represent community sample.", width = 115, exdent=4)
+ref4 <- str_wrap("Survey scoring & results programmed and designed by Emily Willoughby and adapted to online usage by Linh Nguyen and Edward Chou.", width = 105, exdent=4)
 
 ref <- paste(ref1, ref2, ref3, ref4, sep="\n")
 
 final <- final + geom_rect(aes(xmin = 0.5, xmax = 7.5, ymin = 1, ymax = 2.55),
                            fill = light, color = dark) +
   geom_text(aes(x = .8, y = 1.64,
-                label = ref), size = 3, colour = dark, hjust = "left")
+                label = ref), size = 2.65, colour = dark, hjust = "left")
 final <- final + geom_rect(aes(xmin = 0.5, xmax = 7.5, ymin = 2.25, ymax = 2.55),
                            fill = dark, color = dark) +
   geom_text(aes(x = 4, y = 2.4,
@@ -482,7 +497,7 @@ final_page <- invisible(ggarrange(ridge,
                         nrow = 2, ncol=1))
 ```
 
-```{r}
+```{r fig.height = 7.5, fid.width = 4}
 print(O)
 print(C)
 print(E)
@@ -490,5 +505,4 @@ print(A)
 print(N)
 print(final_page)
 ```
-
 

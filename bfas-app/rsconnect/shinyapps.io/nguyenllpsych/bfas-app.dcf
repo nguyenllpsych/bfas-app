@@ -1,0 +1,14 @@
+name: bfas-app
+title: bfas-app
+username:
+account: nguyenllpsych
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 7078328
+bundleId: 6325063
+url: https://nguyenllpsych.shinyapps.io/bfas-app/
+when: 1663788037.9149
+lastSyncTime: 1663788037.9149
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: test.pdf|test.Rmd|test_files
