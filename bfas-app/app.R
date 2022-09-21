@@ -131,137 +131,142 @@ ui <- fluidPage(
   # Application title
   titlePanel("Big Five Aspect Scale"),
   
-  # Side panel with info -- cannot be used with bs_theme
-  #sidebarPanel(
-  #  fluidRow(column(12,
-  #                  htmlOutput("introduction")))
-  #),
-  
-  # Main panel with questionnaire
+  # Main panel  
   mainPanel(
-    fluidRow(htmlOutput("instruction")),
+    tabsetPanel(
+      type = "tabs",
+      
+      # First tab with introduction
+      tabPanel("Introduction", 
+               htmlOutput("introduction")),
+      
+      # Second tab with the questionnaire
+      tabPanel("Take the Survey",
+               
+               # instruction
+               fluidRow(htmlOutput("instruction")),
     
-    # randomize bfas question order
-    fluidRow(
-      column(12,
-             lapply(sample(1:100), function(i) {
-               radioButtons(
-                 inputId  = paste0(bfas_bank[i, 1]), 
-                 label    = paste0(bfas_bank[i, 2]),
-                 #TODO: preselected for easy testing but should be character(0)
-                 selected = 3,
-                 choiceNames  = c("Strongly disagree", 
-                                  "Disagree",
-                                  "Neither agree nor disagree",
-                                  "Agree", 
-                                  "Strongly agree"),
-                 choiceValues = c(1:5))
-    }))), # END BFAS
-    
-    # download
-    fluidRow(
-      column(12,
-             htmlOutput("download"),
-             downloadButton("report", "Generate report"))),
-
-    
-    # demographics
-    fluidRow(
-      column(12,
-             htmlOutput("demographics"),
-             numericInput(inputId = "age",
-                          label   = "What is your age?",
-                          value   = character(0),
-                          min     = 1,
-                          max     = 100),
-             selectInput(inputId = "gender",
-                         label   = "What is your current gender identity?",
-                         choices = c("Female", "Male", "Other", "Prefer not to answer"),
-                         selected = "Prefer not to answer"),
-             selectInput(inputId = "race",
-                         label   = "What race/ethnicity group(s) do you belong to?",
-                         choices = c("Arab or Middle Eastern", 
-                                     "East Asian",
-                                     "South Asian",
-                                     "Black, African, or Caribbean",
-                                     "Hispanic or Latino",
-                                     "Pacific Islander",
-                                     "White, Caucasian, or European",
-                                     "Mixed; Parents are from two different ethnic groups",
-                                     "Other",
-                                     "Prefer not to answer"),
-                         multiple = TRUE),
-             selectInput(inputId = "region",
-                         label   = "What geographical region do you currently live in?",
-                         choices = c("Africa", "Asia", 
-                                     "North America", "South America",
-                                     "Europe", "Oceania",
-                                     "Prefer not to answer"),
-                         selected = "Prefer not to answer"),
-             selectInput(inputId = "religion",
-                         label   = "What is your present religious affiliation, if any?",
-                         choices = c("Buddhist", "Christian",
-                                     "Hindu, Muslim", "Agnostic",
-                                     "Atheist", "Other", 
-                                     "Prefer not to answer"),
-                         selected = "Prefer not to answer"),
-             selectInput(inputId = "relationship",
-                         label   = "What is your relationship status",
-                         choices = c("Single (never married)",
-                                     "Dating one person exclusively",
-                                     "Dating multiple people",
-                                     "Married or in a domestic partnership",
-                                     "Divorced or Separated",
-                                     "Widowed",
-                                     "Prefer not to answer"),
-                         selected = "Prefer not to answer"),
-             selectInput(inputId = "education",
-                         label   = "What level of schooling have you completed?",
-                         choices = c("No school",
-                                     "Primary/elementary school",
-                                     "Some high school",
-                                     "Graduated high school",
-                                     "Trade/Technical/Vocational training",
-                                     "Some undergraduate education (college or university)",
-                                     "Bachelor's degree",
-                                     "Master's degree",
-                                     "Doctoral or professional degree",
-                                     "Prefer not to answer"),
-                         selected = "Prefer not to answer"),
-             selectInput(inputId = "employment",
-                         label   = "What is your current professional or employment status?",
-                         choices = c("Employed for wages",
-                                     "Self-employed",
-                                     "Unemployed",
-                                     "Homemaker",
-                                     "Student",
-                                     "Retired",
-                                     "Prefer not to answer"),
-                         selected = "Prefer not to answer"),
-             selectInput(inputId = "income",
-                         label   = "What is your annual household income in US Dollars?",
-                         choices = c("Less than 10,000",
-                                     "10,000 to 19,999",
-                                     "20,000 to 34,999",                                                  
-                                     "35,000 to 49,999",
-                                     "50,000 to 74,999",
-                                     "75,000 to 99,999",
-                                     "Over 100,000",
-                                     "Prefer not to answer"),
-                         selected = "Prefer not to answer"),
-             selectInput(inputId = "english",
-                         label   = "How well do you speak English?",
-                         choices = c("Very well (fluent/native)",
-                                     "Well",
-                                     "Not very well",
-                                     "Not at all", 
-                                     "Prefer not to answer"),
-                         selected = "Prefer not to answer"),
-             selectInput(inputId = "repeat",
-                         label   = "Have you taken this survey before?",
-                         choices = c("No", "Yes"))
-    ))) # END demographics
-) # END UI
+               # randomize bfas question order
+               fluidRow(
+                 column(12,
+                        lapply(sample(1:100), function(i) {
+                          radioButtons(
+                            inputId  = paste0(bfas_bank[i, 1]), 
+                            label    = paste0(bfas_bank[i, 2]),
+                            #TODO: preselected for easy testing but should be character(0)
+                            selected = 3,
+                            choiceNames  = c("Strongly disagree", 
+                                             "Disagree",
+                                             "Neither agree nor disagree",
+                                             "Agree", 
+                                             "Strongly agree"),
+                            choiceValues = c(1:5))
+               }))), # END BFAS
+               
+               # download
+               fluidRow(
+                 column(12,
+                        htmlOutput("download"),
+                        downloadButton("report", "Generate report"))),
+           
+               
+               # demographics
+               fluidRow(
+                 column(12,
+                        htmlOutput("demographics"),
+                        numericInput(inputId = "age",
+                                     label   = "What is your age?",
+                                     value   = character(0),
+                                     min     = 1,
+                                     max     = 100),
+                        selectInput(inputId = "gender",
+                                    label   = "What is your current gender identity?",
+                                    choices = c("Female", "Male", "Other", "Prefer not to answer"),
+                                    selected = "Prefer not to answer"),
+                        selectInput(inputId = "race",
+                                    label   = "What race/ethnicity group(s) do you belong to?",
+                                    choices = c("Arab or Middle Eastern", 
+                                                "East Asian",
+                                                "South Asian",
+                                                "Black, African, or Caribbean",
+                                                "Hispanic or Latino",
+                                                "Pacific Islander",
+                                                "White, Caucasian, or European",
+                                                "Mixed; Parents are from two different ethnic groups",
+                                                "Other",
+                                                "Prefer not to answer"),
+                                    multiple = TRUE),
+                        selectInput(inputId = "region",
+                                    label   = "What geographical region do you currently live in?",
+                                    choices = c("Africa", "Asia", 
+                                                "North America", "South America",
+                                                "Europe", "Oceania",
+                                                "Prefer not to answer"),
+                                    selected = "Prefer not to answer"),
+                        selectInput(inputId = "religion",
+                                    label   = "What is your present religious affiliation, if any?",
+                                    choices = c("Buddhist", "Christian",
+                                                "Hindu, Muslim", "Agnostic",
+                                                "Atheist", "Other", 
+                                                "Prefer not to answer"),
+                                    selected = "Prefer not to answer"),
+                        selectInput(inputId = "relationship",
+                                    label   = "What is your relationship status",
+                                    choices = c("Single (never married)",
+                                                "Dating one person exclusively",
+                                                "Dating multiple people",
+                                                "Married or in a domestic partnership",
+                                                "Divorced or Separated",
+                                                "Widowed",
+                                                "Prefer not to answer"),
+                                    selected = "Prefer not to answer"),
+                        selectInput(inputId = "education",
+                                    label   = "What level of schooling have you completed?",
+                                    choices = c("No school",
+                                                "Primary/elementary school",
+                                                "Some high school",
+                                                "Graduated high school",
+                                                "Trade/Technical/Vocational training",
+                                                "Some undergraduate education (college or university)",
+                                                "Bachelor's degree",
+                                                "Master's degree",
+                                                "Doctoral or professional degree",
+                                                "Prefer not to answer"),
+                                    selected = "Prefer not to answer"),
+                        selectInput(inputId = "employment",
+                                    label   = "What is your current professional or employment status?",
+                                    choices = c("Employed for wages",
+                                                "Self-employed",
+                                                "Unemployed",
+                                                "Homemaker",
+                                                "Student",
+                                                "Retired",
+                                                "Prefer not to answer"),
+                                    selected = "Prefer not to answer"),
+                        selectInput(inputId = "income",
+                                    label   = "What is your annual household income in US Dollars?",
+                                    choices = c("Less than 10,000",
+                                                "10,000 to 19,999",
+                                                "20,000 to 34,999",                                                  
+                                                "35,000 to 49,999",
+                                                "50,000 to 74,999",
+                                                "75,000 to 99,999",
+                                                "Over 100,000",
+                                                "Prefer not to answer"),
+                                    selected = "Prefer not to answer"),
+                        selectInput(inputId = "english",
+                                    label   = "How well do you speak English?",
+                                    choices = c("Very well (fluent/native)",
+                                                "Well",
+                                                "Not very well",
+                                                "Not at all", 
+                                                "Prefer not to answer"),
+                                    selected = "Prefer not to answer"),
+                        selectInput(inputId = "repeat",
+                                    label   = "Have you taken this survey before?",
+                                    choices = c("No", "Yes"))
+               ))) # END demographics
+))) # END UI
 
 # -------------- Server logic -------------- #
 
@@ -270,7 +275,68 @@ server <- function(input, output) {
   
   # instructions and information
   output$introduction <- renderText({
-    "SOME INTRODUCTION HERE"
+    "<br/><br/>
+    <b>Personality Traits and the Big Five Aspect Scales (BFAS)</b><br/>
+    
+    Personality traits are people's relatively stable patterns of motivation, 
+    emotion, cognition, and behavior across situations. People who score high on
+    a trait (for example, happiness) experience and exhibit psychological states
+    related to that trait (for example, smiling) more often and more intensely 
+    than people who score low on that trait. The scientific Five Factor Model of
+    personality, also known as the Big Five, describes five broad personality 
+    traits: Neuroticism, Agreeableness, Conscientiousness, Extraversion, and 
+    Openness/Intellect. These are not five different personality types: every 
+    person has some level of each of these traits, and so a full personality 
+    profile requires knowing your level on all five. Although they are typically
+    labeled based on one end of the trait, all of them have an opposite end as 
+    well that is just as important (for example, Extraversion versus Introversion).
+    <br/><br/>
+    
+    In the Big Five Aspect Scales (BFAS)—which you may complete on the next tab—
+    the five broad traits are each split into two narrower traits (called Aspects),
+    based on psychometric and genetic evidence. 
+    
+    <ul>
+		<li> Neuroticism: Withdrawal and Volatility </li>
+		<li> Agreeableness: Compassion and Politeness </li>
+		<li> Conscientiousness: Industriousness and Orderliness </li>
+		<li> Extraversion: Enthusiasm and Assertiveness </li>
+		<li> Openness/Intellect: Openness and Intellect </li>
+		</ul><br/>
+    
+    <b>How to interpret your feedback</b><br/>
+    
+    Based on your answers, we estimated your scores on these five broad traits 
+    and ten narrower aspects. To illustrate how your personality compares to 
+    others, we compared your scores to thousands of other people who have taken 
+    the BFAS to generate <b>percentile scores.</b> As an example, if you 
+    received a score of 90 on Enthusiasm (an aspect of Extraversion describing 
+    friendliness, sociability, and the tendency to experience high energy 
+    positive emotions like joy and excitement), your score on that trait is 
+    higher than that of 90% of people. With such a high Enthusiasm score, you 
+    are probably more friendly, outgoing, and positive than most others. 
+    Conversely, if you received a 5th percentile score, your score is higher 
+    than 5% of people (and lower than 95% of people), meaning you are probably 
+    reserved, quiet, and unexcitable compared to most others.
+    <br/><br/>
+    
+    To help you understand what your score means for your personality, 
+    we categorized your score on each trait as <b>low, below average, above average,
+    or high.</b> Each category is accompanied by a description of typical patterns 
+    of behavior, emotion, and cognition for someone falling in that category. 
+    This feedback should be reasonably accurate, but it will not always be 
+    perfectly accurate for everyone due to idiosyncrasies in the way people 
+    answer the questions. People’s answers can be influenced by their mood, who 
+    they compare themselves to, what they recall, and whether they hold a biased
+    view of themselves. Some people might find adjacent categories—or a 
+    combination of categories—to fit their personality better than their 
+    assigned category. For example, someone scoring only slightly below average 
+    in Enthusiasm might also refer to the descriptions of someone scoring above 
+    average in Enthusiasm. 
+    <br/><br/>
+    
+    <b>Feedback is for personal use only and is not suitable for any clinical, 
+    diagnostic, or professional use.</b>"
   })
   
   output$instruction <- renderText({
