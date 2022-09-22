@@ -1,6 +1,8 @@
 # -------------- Set-up -------------- #
 
 # libraries
+library("googledrive")
+library("googlesheets4")
 library("shiny")
 library("prettyGraphs")
 library("ggplot2")
@@ -13,6 +15,14 @@ library("stringr")
 library("dplyr")
 library("tidyr")
 library("shinyRadioMatrix")
+
+# google drive authentication
+options(
+  # whenever there is one account token found, use the cached token
+  gargle_oauth_email = TRUE,
+  # specify auth tokens should be stored in a hidden directory ".secrets"
+  gargle_oauth_cache = ".secrets"
+)
 
 # BFAS questionnaire
 bfas_bank <- data.frame(
@@ -119,12 +129,15 @@ bfas_bank <- data.frame(
             "See beauty in things that others might not notice.")
 )
 
-# TODO: bfas_random currently not truly random
-bfas_random <- bfas_bank[sample(1:100),]
+# TODO: bfas_random currently not random
+bfas_random <- bfas_bank
 
 # norming data
 Aspects <- readRDS("Aspects.RData")
 norms   <- readRDS("norms.RData")
+
+# google sheet for storing data
+sheet_id <- "1zCXQy-aYWdszX9z-T_vH8vWn_X8m47Mte8JDp757qSE"
 
 # -------------- Define UI -------------- #
 
@@ -170,7 +183,7 @@ ui <- fluidPage(
                fluidRow(
                  column(12,
                         htmlOutput("download"),
-                        downloadButton("report", "Generate report"))),
+                        downloadButton("report", "Generate Report"))),
            
                
                # demographics
@@ -198,6 +211,7 @@ ui <- fluidPage(
                                                 "Mixed; Parents are from two different ethnic groups",
                                                 "Other",
                                                 "Prefer not to answer"),
+                                    selected = "Prefer not to answer",
                                     multiple = TRUE),
                         selectInput(inputId = "region",
                                     label   = "What geographical region do you currently live in?",
@@ -267,8 +281,20 @@ ui <- fluidPage(
                                     selected = "Prefer not to answer"),
                         selectInput(inputId = "repeat",
                                     label   = "Have you taken this survey before?",
-                                    choices = c("No", "Yes"))
-               ))) # END demographics
+                                    choices = c("No", "Yes")),
+                        textInput(inputId   = "id",
+                                  label     = "Please provide your participant ID if you were given one",
+                                  value     = NA)
+               )), # END demographics
+               
+               # submit data
+               fluidRow(
+                 column(12, 
+                        htmlOutput("permission"),
+                        actionButton("submit", "Submit Your Data"),
+                        uiOutput("thankyou"),
+                        htmlOutput("linebreak"))
+               )) 
 ))) # END UI
 
 # -------------- Server logic -------------- #
@@ -339,7 +365,7 @@ server <- function(input, output) {
     <br/><br/>
     
     <b>Feedback is for personal use only and is not suitable for any clinical, 
-    diagnostic, or professional use.</b>"
+    diagnostic, or professional use.</b><br/><br/>"
   })
   
   output$instruction <- renderText({
@@ -358,6 +384,18 @@ server <- function(input, output) {
   paste("<br/> ---------------- <br/>
         Please click on the button below when you are finished. 
         Please allow for a few minutes to generate the report. <br/> <br/>")})
+  
+  output$permission <- renderText({
+  paste("<br/> ---------------- <br/>
+        We would greatly appreciate it if you would like to contribute your data
+        to our research. All data are confidential and accessible only by the 
+        research team at the University of Minnesota.
+        IRB INFORMATION HERE!!! <br/><br/>")
+  })
+  
+  output$linebreak <- renderText({
+  paste("<br/><br/><br/>")
+  })
   
   # extract user inputted bfas data
   bfas_data <- reactive({
@@ -394,6 +432,47 @@ server <- function(input, output) {
       )
     }
   )
+  # data storage
+  submission <- eventReactive(input$submit, {
+    
+    # combine all data
+    time <- Sys.time()
+    export <- reactive({
+      data <- cbind(input$id,
+                    time,
+                    bfas_data(),
+                    matrix(c(input$age,
+                             input$gender,
+                             input$race,
+                             input$region,
+                             input$religion,
+                             input$relationship,
+                             input$education,
+                             input$employment,
+                             input$income,
+                             input$english,
+                             input$`repeat`),
+                          nrow = 1))
+      names(data)[1:2]     <- c("id", "time")
+      names(data)[103:113] <- c("age", "gender",
+                                "race", "region", "religion", "relationship",
+                                "education", "employment", "income",
+                                "english", "repeat")
+      data
+      })
+    
+    # add data to google sheet
+    sheet_append(ss = sheet_id,
+                 data = export(),
+                 sheet = "Raw")
+    
+    # thank participant
+    h4("Thank you for contributing your data!")
+  })
+  
+  output$thankyou <- renderUI({
+    submission()
+  })
 } # END server
 
 # Run the application 

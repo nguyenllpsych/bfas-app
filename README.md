@@ -9,4 +9,4 @@ https://nguyenllpsych.shinyapps.io/bfas-app/
 - DeYoung, C. G. (2015). Cybernetic big five theory. <i>Journal of Research in Personality, 56</i>, 33-58.
 
 Norm data for each aspect and factor are drawn from DeYoung, Quilty & Peterson (2007) and represent a community sample.
-Survey scoring and results programmed and designed by <a rel='noopener' target='_blank' href='https://emilywilloughby.com/'> Emily Willoughby</a> and adapted to online usage by <a rel='noopener' target='_blank' href='https://nguyenllpsych.github.io/'> Linh Nguyen</a>.
+Survey scoring and results programmed and designed by <a rel='noopener' target='_blank' href='https://emilywilloughby.com/'> Emily Willoughby</a> and adapted to online usage by <a rel='noopener' target='_blank' href='https://nguyenllpsych.github.io/'> Linh Nguyen</a> and <a rel='noopener' target='_blank' href='https://cla.umn.edu/about/directory/profile/chou0185/'> Edward Chou</a>.
