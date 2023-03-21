@@ -195,10 +195,15 @@ ui <- fluidPage(
                                      value   = character(0),
                                      min     = 1,
                                      max     = 100),
+                        selectInput(inputId = "sex",
+                                    label   = "What is your sex assigned at birth?",
+                                    # empty string added to have no preselection
+                                    choices = c("","Female", "Male", "Other", "Prefer not to answer"),
+                                    selected = NULL),
                         selectInput(inputId = "gender",
                                     label   = "What is your current gender identity?",
-                                    choices = c("Female", "Male", "Other", "Prefer not to answer"),
-                                    selected = "Prefer not to answer"),
+                                    choices = c("","Female", "Male", "Other", "Prefer not to answer"),
+                                    selected = NULL),
                         selectInput(inputId = "race",
                                     label   = "What race/ethnicity group(s) do you belong to?",
                                     choices = c("Arab or Middle Eastern", 
@@ -211,35 +216,35 @@ ui <- fluidPage(
                                                 "Mixed; Parents are from two different ethnic groups",
                                                 "Other",
                                                 "Prefer not to answer"),
-                                    selected = "Prefer not to answer",
+                                    selected = NULL,
                                     multiple = TRUE),
                         selectInput(inputId = "region",
                                     label   = "What geographical region do you currently live in?",
-                                    choices = c("Africa", "Asia", 
+                                    choices = c("","Africa", "Asia", 
                                                 "North America", "South America",
                                                 "Europe", "Oceania",
                                                 "Prefer not to answer"),
-                                    selected = "Prefer not to answer"),
+                                    selected = NULL),
                         selectInput(inputId = "religion",
                                     label   = "What is your present religious affiliation, if any?",
-                                    choices = c("Buddhist", "Christian",
+                                    choices = c("","Buddhist", "Christian",
                                                 "Hindu, Muslim", "Agnostic",
                                                 "Atheist", "Other", 
                                                 "Prefer not to answer"),
-                                    selected = "Prefer not to answer"),
+                                    selected = NULL),
                         selectInput(inputId = "relationship",
                                     label   = "What is your relationship status",
-                                    choices = c("Single (never married)",
+                                    choices = c("","Single (never married)",
                                                 "Dating one person exclusively",
                                                 "Dating multiple people",
                                                 "Married or in a domestic partnership",
                                                 "Divorced or Separated",
                                                 "Widowed",
                                                 "Prefer not to answer"),
-                                    selected = "Prefer not to answer"),
+                                    selected = NULL),
                         selectInput(inputId = "education",
                                     label   = "What level of schooling have you completed?",
-                                    choices = c("No school",
+                                    choices = c("","No school",
                                                 "Primary/elementary school",
                                                 "Some high school",
                                                 "Graduated high school",
@@ -249,20 +254,20 @@ ui <- fluidPage(
                                                 "Master's degree",
                                                 "Doctoral or professional degree",
                                                 "Prefer not to answer"),
-                                    selected = "Prefer not to answer"),
+                                    selected = NULL),
                         selectInput(inputId = "employment",
                                     label   = "What is your current professional or employment status?",
-                                    choices = c("Employed for wages",
+                                    choices = c("","Employed for wages",
                                                 "Self-employed",
                                                 "Unemployed",
                                                 "Homemaker",
                                                 "Student",
                                                 "Retired",
                                                 "Prefer not to answer"),
-                                    selected = "Prefer not to answer"),
+                                    selected = NULL),
                         selectInput(inputId = "income",
                                     label   = "What is your annual household income in US Dollars?",
-                                    choices = c("Less than 10,000",
+                                    choices = c("","Less than 10,000",
                                                 "10,000 to 19,999",
                                                 "20,000 to 34,999",                                                  
                                                 "35,000 to 49,999",
@@ -270,18 +275,18 @@ ui <- fluidPage(
                                                 "75,000 to 99,999",
                                                 "Over 100,000",
                                                 "Prefer not to answer"),
-                                    selected = "Prefer not to answer"),
+                                    selected = NULL),
                         selectInput(inputId = "english",
                                     label   = "How well do you speak English?",
-                                    choices = c("Very well (fluent/native)",
+                                    choices = c("","Very well (fluent/native)",
                                                 "Well",
                                                 "Not very well",
                                                 "Not at all", 
                                                 "Prefer not to answer"),
-                                    selected = "Prefer not to answer"),
+                                    selected = NULL),
                         selectInput(inputId = "repeat",
                                     label   = "Have you taken this survey before?",
-                                    choices = c("No", "Yes")),
+                                    choices = c("","No", "Yes")),
                         textInput(inputId   = "id",
                                   label     = "Please provide your participant ID if you were given one",
                                   value     = NA)
@@ -438,23 +443,79 @@ server <- function(input, output) {
     # combine all data
     time <- Sys.time()
     export <- reactive({
+      if(is.null(input$sex)){
+        sex <- NA
+      } else {
+        sex <- input$sex
+      }
+      if(is.null(input$gender)){
+        gender <- NA
+      } else {
+        gender <- input$gender
+      }
+      if(is.null(input$race)){
+        race <- NA
+      } else {
+        race <- paste(input$race, collapse = ";")
+      }
+      if(is.null(input$region)){
+        region <- NA
+      } else {
+        region <- input$region
+      }
+      if(is.null(input$religion)){
+        religion <- NA
+      } else {
+        religion <- input$religion
+      }
+      if(is.null(input$relationship)){
+        relationship <- NA
+      } else {
+        relationship <- input$relationship
+      }
+      if(is.null(input$education)){
+        education <- NA
+      } else {
+        education <- input$education
+      }
+      if(is.null(input$employment)){
+        employment <- NA
+      } else {
+        employment <- input$employment
+      }
+      if(is.null(input$income)){
+        income <- NA
+      } else {
+        income <- input$income
+      }
+      if(is.null(input$english)){
+        english <- NA
+      } else {
+        english <- input$english
+      }
+      if(is.null(input$`repeat`)){
+        repeat_var <- NA
+      } else {
+        repeat_var <- input$`repeat`
+      }
       data <- cbind(input$id,
                     time,
                     bfas_data(),
                     matrix(c(input$age,
-                             input$gender,
-                             input$race,
-                             input$region,
-                             input$religion,
-                             input$relationship,
-                             input$education,
-                             input$employment,
-                             input$income,
-                             input$english,
-                             input$`repeat`),
+                             sex,
+                             gender,
+                             race,
+                             region,
+                             religion,
+                             relationship,
+                             education,
+                             employment,
+                             income,
+                             english,
+                             repeat_var),
                           nrow = 1))
       names(data)[1:2]     <- c("id", "time")
-      names(data)[103:113] <- c("age", "gender",
+      names(data)[103:114] <- c("age", "sex", "gender",
                                 "race", "region", "religion", "relationship",
                                 "education", "employment", "income",
                                 "english", "repeat")
