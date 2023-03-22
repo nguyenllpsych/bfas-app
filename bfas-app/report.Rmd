@@ -42,6 +42,7 @@ cols = c('Q_1','Q_21','Q_41','Q_71',
          'Q_15','Q_45','Q_55','Q_85',
          'Q_50','Q_60','Q_80','Q_90')
 
+# reverse scoring
 d[cols] = 6 - d[cols]
 
 # Neuroticism
@@ -81,6 +82,7 @@ d$bfas_o <- (d$Openness + d$Intellect)/2
 
 ####################################### Norming ###########################################################
 
+# extract scored variables
 sub_scores <- d[,c(101:115)] 
 colors <- Aspects[7,]
 
@@ -95,25 +97,34 @@ names(norms) <- names
 names(pnorms) <- names
 names(sub_scores) <- names
 
+# subject identifier: norms = 0, current respondent = 1
 norms$Subject <- 0
 sub_scores$Subject <- 1
 
+# add the current respondent to the norms data
 norms <- rbind(norms,sub_scores)
 
 for (i in colnames(norms[1:15])) {
   norms[[i]] <- scale(norms[[i]])
 }  
 
+# z score for the current respondent
 scaled_sub <- subset(norms,Subject==1)
 
+# percentile score for the current respondent
 for (i in colnames(scaled_sub)) {
   pnorms[[i]] <- round(pnorm(scaled_sub[[i]][1])*100,0)
 }  
 
+# combine raw scores, z scores, percentile scores
 sub <- rbind(sub_scores,scaled_sub,pnorms)
+
+# remove subject identifier
 sub <- sub[,-16]
 norms <- norms[,-16]
 
+# create long dataframe of all norms data
+# 1 variable and 1 subject per row
 n <- as.data.frame(matrix(, ncol = 2))
 for (i in colnames(norms)){
   df <- as.data.frame(norms[,i])
@@ -123,6 +134,8 @@ for (i in colnames(norms)){
 n <- n[-1,]
 names(n) <- c("Value","Personality")
 
+# add a row in the sub dataframe for current respondent scores
+# with english descriptions of percentile scores
 sub[4,] <- NA
 for (i in seq_along(sub)) {
   p <- sub[[i]][3]
@@ -146,12 +159,15 @@ for (i in seq_along(sub)) {
 
 n$Personality <- factor(n$Personality, levels=names)
 
+# add a row in the sub dataframe for current respondent scores
+# with the hex codes for each personality traits
 sub[5,] <- c('#f3a83b','#c3872e','#824817', # Neuroticism
              '#de6b68','#e0908d','#813f3c', # Agreeableness
              '#5f94c8','#76b8f9','#406488', # Conscientiousness
              '#a487f7','#836cc7','#594a87', # Extraversion
              '#98ba93','#708a6c','#5a6a37') # Openness/Intellect
 
+# create a dataframe of quantile values across 15 traits in norms data
 max <- as.data.frame(matrix(, ncol = 15, nrow=5))
 names(max) <- names
 for (i in colnames(norms)) {
@@ -162,9 +178,9 @@ for (i in colnames(norms)) {
   max[[i]][5] <- mean(norms[[i]])
 }
 
+# create a dataframe that is the transpose version of sub dataframe
 scores <- as.data.frame(matrix(, ncol = 5, nrow=15))
 rownames(scores) <- names
-
 for (i in colnames(sub)){
   scores[i,][[1]] <- sub[,i][[1]]
   scores[i,][[2]] <- sub[,i][[2]]
@@ -174,6 +190,9 @@ for (i in colnames(sub)){
 }
 names(scores) <- c("score","z","perc","percentile","color")
 
+# add columns in the scores dataframe
+# with the quantile values from max dataframe
+# and aspect vs. domain indicator
 scores$q1 <- as.vector(t(max[1,]))
 scores$q2 <- as.vector(t(max[2,]))
 scores$q3 <- as.vector(t(max[3,]))
@@ -182,6 +201,9 @@ scores$mean <- as.vector(t(max[5,]))
 scores$h <- c("aspect","aspect","domain","aspect","aspect",
               "domain","aspect","aspect","domain","aspect",
               "aspect","domain","aspect","aspect","domain")
+
+# add a column in scores dataframe
+# for the english description in the report
 scores$label <- NA
 for (i in rownames(scores)){
   scores[i,][[12]] <- paste0("You scored at the ", scores[i,][[4]], " for this ", scores[i,][[11]]," of personality.",
@@ -190,6 +212,7 @@ for (i in rownames(scores)){
 
 scores$z <- as.numeric(scores$z)
 colnames(Aspects) <- names
+
 ############################### Printing ###########################################################
 theme_set(theme_minimal())
 
